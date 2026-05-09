@@ -121,6 +121,7 @@ npm start
 - `replyPrefix`: AI 回复前加 `[工作]` 前缀（默认 true）
 - `defaultSession`: 启动后默认使用的会话
 - 每个 session 必须定义 `cwd` 和 `command`
+- 同一 `cwd` 下的微信消息会继续写入该目录最近的 Pi session，方便电脑端 `resume` 接着聊
 
 ---
 
@@ -133,6 +134,7 @@ npm start
 ### Features
 
 - **Multi-session routing**: `/wechat` / `/english` / `/quant` — case-insensitive, instant switching
+- **Persistent cwd binding**: each bridge session attaches to the latest Pi session in the same project directory
 - **Concurrent processing**: each session runs independently, no blocking
 - **Image buffering**: send images first, then text — merged automatically
 - **Reply prefix**: `[wechat]` / `[english]` labels on every AI response

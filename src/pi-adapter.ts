@@ -61,7 +61,10 @@ export class PiAgentAdapter implements PiSessionFactory {
   async create(cwd: string, _sessionKey: string): Promise<PiSession> {
     await this.init()
 
-    const sessionMgr = SessionManager.inMemory()
+    // Bind WeChat routing to the project’s persisted Pi session history.
+    // This makes the bridge attach to the latest session in the same cwd,
+    // so WeChat and local `resume`/`continue` share the same context.
+    const sessionMgr = SessionManager.continueRecent(cwd)
 
     const { session } = await createAgentSession({
       sessionManager: sessionMgr,
