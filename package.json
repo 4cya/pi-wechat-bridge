@@ -1,7 +1,7 @@
 {
   "name": "pi-wechat-bridge",
   "version": "0.1.0",
-  "description": "WeChat bridge for Pi Agent with multi-session routing",
+  "description": "在微信中管理多个 Pi Agent 会话，支持 #work / #chat / #english 一键切换，图片缓存合并，多会话并发处理。One WeChat, multiple AI coding sessions.",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
@@ -20,9 +20,18 @@
   "keywords": [
     "pi-agent",
     "wechat",
+    "weixin",
+    "微信",
     "bridge",
-    "ai",
-    "chatbot"
+    "ai-agent",
+    "coding-agent",
+    "multi-session",
+    "chatbot",
+    "ai-chat",
+    "session-router",
+    "terminal",
+    "cli",
+    "pi-package"
   ],
   "license": "MIT",
   "repository": {
