@@ -136,11 +136,25 @@ async function main() {
 
     switch (route.action) {
       case 'switch': {
-        currentSession = route.targetSession!
+        const newKey = route.targetSession!
+        currentSession = newKey
         const switched = pool.switchTo(currentSession)
         // Clear image buffer on session switch
         getBuffer(currentSession).clear()
-        await sendReply(bot, msg, `[${route.displayName}]\n${switched}`)
+
+        // Extract payload after the command (e.g., "/English how are you" → "how are you")
+        const sessionCfg = config.sessions[newKey]
+        const payload = extractPayload(text!, sessionCfg.command)
+
+        if (payload) {
+          // Has text after command: send to AI after switch notification
+          console.log(`[${newKey}] → ${payload.slice(0, 80)}`)
+          await sendReply(bot, msg, `${switched}`)
+          await pool.send(payload, undefined, newKey)
+        } else {
+          // Pure switch, no payload
+          await sendReply(bot, msg, `${switched}`)
+        }
         return
       }
 
