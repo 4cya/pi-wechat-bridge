@@ -56,6 +56,8 @@ cp sessions.example.json sessions.json
 # 4. 启动
 npm start
 # 或用 PM2 持久运行：
+cp ecosystem.example.config.cjs ecosystem.config.cjs
+# 编辑 ecosystem.config.cjs，改成你的路径
 pm2 start ecosystem.config.cjs
 ```
 
@@ -153,6 +155,8 @@ npm start                                # scan QR, done!
 
 ```bash
 npm install -g pm2
+cp ecosystem.example.config.cjs ecosystem.config.cjs
+# edit ecosystem.config.cjs — set your local paths
 pm2 start ecosystem.config.cjs
 pm2 save
 pm2 startup

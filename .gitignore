@@ -3,3 +3,4 @@ dist/
 *.log
 .wechatbot/
 sessions.json
+ecosystem.config.cjs
