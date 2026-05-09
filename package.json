@@ -1,0 +1,43 @@
+{
+  "name": "pi-wechat-bridge",
+  "version": "0.1.0",
+  "description": "WeChat bridge for Pi Agent with multi-session routing",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "pi-wechat-bridge": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    "sessions.example.json",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "npx tsx src/index.ts"
+  },
+  "keywords": [
+    "pi-agent",
+    "wechat",
+    "bridge",
+    "ai",
+    "chatbot"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/4cya/pi-wechat-bridge.git"
+  },
+  "dependencies": {
+    "@wechatbot/wechatbot": "^2.0.1"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*"
+  },
+  "devDependencies": {
+    "@earendil-works/pi-coding-agent": "*",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.0.0"
+  }
+}

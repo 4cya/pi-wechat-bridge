@@ -1,0 +1,21 @@
+{
+  "defaultSession": "chat",
+  "replyPrefix": true,
+  "sessions": {
+    "chat": {
+      "name": "聊天",
+      "cwd": "/home/ubuntu/work/wechat",
+      "command": "#chat"
+    },
+    "work": {
+      "name": "工作",
+      "cwd": "/home/ubuntu/work/code",
+      "command": "#work"
+    },
+    "english": {
+      "name": "英语",
+      "cwd": "/home/ubuntu/work/english",
+      "command": "#english"
+    }
+  }
+}
