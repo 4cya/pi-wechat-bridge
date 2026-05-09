@@ -6,7 +6,7 @@
  *   npx pi-wechat-bridge [--config sessions.json] [--force-login]
  *
  * Features:
- *   - #work / #english / #chat to switch Pi sessions
+ *   - /work /english /quant to switch Pi sessions (case-insensitive)
  *   - Image buffering (wait for text before sending to AI)
  *   - Per-session queue (non-blocking across sessions)
  *   - Reply prefix [session-name] for each AI response
@@ -66,7 +66,7 @@ async function main() {
     const clean = stripMarkdown(text)
 
     // Add prefix using command name (e.g., [english]) instead of Chinese name
-    const cmd = config.sessions[sessionKey]?.command?.replace('#', '') ?? sessionKey
+    const cmd = config.sessions[sessionKey]?.command?.replace('/', '') ?? sessionKey
     const prefix = config.replyPrefix ? `[${cmd}]\n` : ''
     const final = prefix + clean
 

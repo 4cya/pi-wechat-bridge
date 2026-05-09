@@ -8,7 +8,7 @@ export interface RouteResult {
 }
 
 /**
- * Parse incoming WeChat message for #xxx routing commands.
+ * Parse incoming WeChat message for /xxx routing commands (case-insensitive).
  */
 export function parseRoute(
   text: string,
@@ -17,8 +17,10 @@ export function parseRoute(
 ): RouteResult {
   const trimmed = text.trim()
 
-  // #sessions — list all sessions
-  if (trimmed === '#sessions' || trimmed === '#list') {
+  const lower = trimmed.toLowerCase()
+
+  // /sessions — list all sessions
+  if (lower === '/sessions' || lower === '/list') {
     const list = Object.entries(config.sessions)
       .map(([key, s]) => `${s.command} → ${s.name} (${key})`)
       .join('\n')
@@ -28,20 +30,20 @@ export function parseRoute(
     }
   }
 
-  // #help
-  if (trimmed === '#help') {
+  // /help
+  if (lower === '/help') {
     return {
       action: 'list',
       message: `指令说明：
-#work / #english / #chat → 切换会话
-#sessions → 列出所有会话
-#help → 显示帮助
+/wechat /english /quant → 切换会话
+/sessions → 列出所有会话
+/help → 显示帮助
 当前会话：[${config.sessions[currentSession]?.name ?? currentSession}]`,
     }
   }
 
-  // Match #xxx command
-  const match = trimmed.match(/^(#[^\s]+)/)
+  // Match /xxx command (case-insensitive)
+  const match = trimmed.match(/^(\/[^\s]+)/)
   if (!match) {
     return { action: 'route', targetSession: currentSession }
   }
@@ -65,7 +67,7 @@ export function parseRoute(
     }
   }
 
-  // Unknown #command — treat as regular message
+  // Unknown /command — treat as regular message
   return { action: 'route', targetSession: currentSession }
 }
 
@@ -76,7 +78,7 @@ export function parseRoute(
 export function extractPayload(text: string, command: string): string | null {
   const trimmed = text.trim()
 
-  // If the whole message is just the command (e.g., "#work"), return null
+  // If the whole message is just the command (e.g., "/work"), return null
   if (trimmed.toLowerCase() === command.toLowerCase()) {
     return null
   }

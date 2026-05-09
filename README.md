@@ -22,9 +22,10 @@
 **pi-wechat-bridge** 是一个微信桥接器，让你在微信中同时管理多个 AI 编程助手会话。
 
 你可以在一个微信聊天窗口里：
-- 用 `#work` 切换到**工作会话**（写代码、改 bug）
-- 用 `#english` 切换到**英语学习会话**（练口语、纠语法）
-- 用 `#chat` 切换到**聊天会话**（日常问答）
+- 用 `/work` 切换到**工作会话**（写代码、改 bug）
+- 用 `/english` 切换到**英语学习会话**（练口语、纠语法）
+- 用 `/chat` 切换到**聊天会话**（日常问答）
+- 指令不区分大小写：`/English` `/ENGLISH` 均可
 
 不同会话之间**并发处理**，互不阻塞。每个会话都有自己的工作目录和规则。
 
@@ -32,7 +33,7 @@
 
 | 痛点 | 解决方案 |
 |---|---|
-| 多个 AI 项目来回切终端很累 | 微信里 `#xxx` 一键切换 |
+| 多个 AI 项目来回切终端很累 | 微信里 `/xxx` 一键切换 |
 | 手机发图片给 AI，想配文字说明 | 先发图再发字，桥接自动合并 |
 | 多个助手同时干活会互相等 | 不同 session 并发，不会阻塞 |
 | 每个项目规则不同，不想混 | 每个 session 独立目录，`.pi/SYSTEM.md` 自治 |
@@ -64,11 +65,11 @@ pm2 start ecosystem.config.cjs
 
 | 指令 | 作用 |
 |---|---|
-| `#work` | 切换到工作会话 |
-| `#english` | 切换到英语会话 |
-| `#chat` | 切换到聊天会话 |
-| `#sessions` | 列出所有可用会话 |
-| `#help` | 显示帮助 |
+| `/work` | 切换到工作会话 |
+| `/english` | 切换到英语会话 |
+| `/chat` | 切换到聊天会话 |
+| `/sessions` | 列出所有可用会话 |
+| `/help` | 显示帮助 |
 
 ### 图片缓存
 
@@ -80,14 +81,14 @@ pm2 start ecosystem.config.cjs
 
 ```
 /home/ubuntu/work/
-├── wechat/          ← #chat 会话
+├── AGENTS.md           ← 全局规则（所有子会话继承）
+├── wechat/             ← /wechat 会话
 │   └── .pi/
 │       └── SYSTEM.md
-├── code/            ← #work 会话
-│   ├── .pi/
-│   │   └── SYSTEM.md
-│   └── AGENTS.md
-└── english/         ← #english 会话
+├── english/            ← /english 会话
+│   └── .pi/
+│       └── SYSTEM.md
+└── quant/              ← /quant 会话
     └── .pi/
         └── SYSTEM.md
 ```
@@ -112,7 +113,7 @@ pm2 start ecosystem.config.cjs
     "work": {
       "name": "工作",
       "cwd": "/home/ubuntu/work/code",
-      "command": "#work"
+      "command": "/work"
     }
   }
 }
@@ -132,10 +133,10 @@ pm2 start ecosystem.config.cjs
 
 ### Features
 
-- **Multi-session routing**: `#wechat` / `#english` / `#quant` — instant context switching
+- **Multi-session routing**: `/wechat` / `/english` / `/quant` — case-insensitive, instant switching
 - **Concurrent processing**: each session runs independently, no blocking
 - **Image buffering**: send images first, then text — merged automatically
-- **Reply prefix**: `[微信助手]` / `[英语学习]` labels on every AI response
+- **Reply prefix**: `[wechat]` / `[english]` labels on every AI response
 - **Pluggable adapters**: Pi Agent, Claude Code, Codex, OpenCode
 - **Full WeChat media**: text, images, voice, video, files — powered by [@wechatbot/wechatbot](https://github.com/corespeed-io/wechatbot)
 
@@ -179,7 +180,7 @@ iLink API ←── @wechatbot/wechatbot
 ┌─────────────────────────┐
 │   pi-wechat-bridge      │
 │                         │
-│  Router (#xxx)          │
+│  Router (/xxx)          │
 │    │                    │
 │  Session Pool           │
 │   ├── [work]  cwd: /code│

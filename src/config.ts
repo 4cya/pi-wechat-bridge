@@ -53,8 +53,8 @@ function validateConfig(config: BridgeConfig): void {
     if (!session.name) {
       session.name = key
     }
-    if (!session.command.startsWith('#')) {
-      session.command = '#' + session.command
+    if (!session.command.startsWith('/')) {
+      session.command = '/' + session.command
     }
     if (commands.has(session.command)) {
       console.error(`Duplicate command: ${session.command}`)

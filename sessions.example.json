@@ -5,17 +5,17 @@
     "wechat": {
       "name": "微信助手",
       "cwd": "/home/ubuntu/work/wechat",
-      "command": "#wechat"
+      "command": "/wechat"
     },
     "english": {
       "name": "英语学习",
       "cwd": "/home/ubuntu/work/english",
-      "command": "#english"
+      "command": "/english"
     },
     "quant": {
       "name": "量化分析",
       "cwd": "/home/ubuntu/work/quant",
-      "command": "#quant"
+      "command": "/quant"
     }
   }
 }
