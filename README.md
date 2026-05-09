@@ -58,6 +58,8 @@ npm start
 pm2 start ecosystem.config.cjs
 ```
 
+> 微信接入基于 [@wechatbot/wechatbot](https://github.com/corespeed-io/wechatbot) — 扫码即连，支持文本、图片、语音、视频、文件。
+
 ### 会话指令
 
 | 指令 | 作用 |
@@ -135,7 +137,7 @@ pm2 start ecosystem.config.cjs
 - **Image buffering**: send images first, then text — merged automatically
 - **Reply prefix**: `[Work]` / `[English]` labels on every AI response
 - **Pluggable adapters**: Pi Agent, Claude Code, Codex, OpenCode
-- **Full WeChat media**: text, images, voice, video, files
+- **Full WeChat media**: text, images, voice, video, files — powered by [@wechatbot/wechatbot](https://github.com/corespeed-io/wechatbot)
 
 ### Install & Run
 
@@ -155,7 +157,15 @@ pm2 save
 pm2 startup
 ```
 
+See [PM2 documentation](https://pm2.keymetrics.io/) for more.
+
 ---
+
+## Credits
+
+Built on top of:
+- [@wechatbot/wechatbot](https://github.com/corespeed-io/wechatbot) — WeChat iLink Bot SDK
+- [Pi Agent](https://github.com/badlogic/pi-mono) — Minimal terminal coding agent
 
 ## Architecture
 
