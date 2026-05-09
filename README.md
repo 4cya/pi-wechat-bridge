@@ -132,10 +132,10 @@ pm2 start ecosystem.config.cjs
 
 ### Features
 
-- **Multi-session routing**: `#work` / `#chat` / `#english` — instant context switching
+- **Multi-session routing**: `#wechat` / `#english` / `#quant` — instant context switching
 - **Concurrent processing**: each session runs independently, no blocking
 - **Image buffering**: send images first, then text — merged automatically
-- **Reply prefix**: `[Work]` / `[English]` labels on every AI response
+- **Reply prefix**: `[微信助手]` / `[英语学习]` labels on every AI response
 - **Pluggable adapters**: Pi Agent, Claude Code, Codex, OpenCode
 - **Full WeChat media**: text, images, voice, video, files — powered by [@wechatbot/wechatbot](https://github.com/corespeed-io/wechatbot)
 
