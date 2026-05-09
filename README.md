@@ -55,10 +55,7 @@ cp sessions.example.json sessions.json
 
 # 4. 启动
 npm start
-# 或用 PM2 持久运行：
-cp ecosystem.example.config.cjs ecosystem.config.cjs
-# 编辑 ecosystem.config.cjs，改成你的路径
-pm2 start ecosystem.config.cjs
+# 或用 PM2 持久运行（自行创建 ecosystem.config.cjs）
 ```
 
 > 微信接入基于 [@wechatbot/wechatbot](https://github.com/corespeed-io/wechatbot) — 扫码即连，支持文本、图片、语音、视频、文件。
@@ -153,10 +150,10 @@ npm start                                # scan QR, done!
 
 ### PM2 (recommended for servers)
 
+Create `ecosystem.config.cjs` with your local paths, then:
+
 ```bash
 npm install -g pm2
-cp ecosystem.example.config.cjs ecosystem.config.cjs
-# edit ecosystem.config.cjs — set your local paths
 pm2 start ecosystem.config.cjs
 pm2 save
 pm2 startup

@@ -4,3 +4,4 @@ dist/
 .wechatbot/
 sessions.json
 ecosystem.config.cjs
+ecosystem.example.config.cjs

@@ -146,14 +146,15 @@ async function main() {
         const sessionCfg = config.sessions[newKey]
         const payload = extractPayload(text!, sessionCfg.command)
 
+        // Switch confirmation uses command name (e.g., [english]), consistent with AI reply prefix
+        const cmd = sessionCfg.command.replace('/', '')
+
         if (payload) {
-          // Has text after command: send to AI after switch notification
           console.log(`[${newKey}] → ${payload.slice(0, 80)}`)
-          await sendReply(bot, msg, `${switched}`)
+          await sendReply(bot, msg, `[${cmd}] ${switched}`)
           await pool.send(payload, undefined, newKey)
         } else {
-          // Pure switch, no payload
-          await sendReply(bot, msg, `${switched}`)
+          await sendReply(bot, msg, `[${cmd}] ${switched}`)
         }
         return
       }
