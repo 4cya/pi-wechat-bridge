@@ -65,8 +65,9 @@ async function main() {
     // Clean markdown for WeChat
     const clean = stripMarkdown(text)
 
-    // Add prefix
-    const prefix = config.replyPrefix ? `[${sessionName}]\n` : ''
+    // Add prefix using command name (e.g., [english]) instead of Chinese name
+    const cmd = config.sessions[sessionKey]?.command?.replace('#', '') ?? sessionKey
+    const prefix = config.replyPrefix ? `[${cmd}]\n` : ''
     const final = prefix + clean
 
     // Send to WeChat — note: we don't have the original msg here,
