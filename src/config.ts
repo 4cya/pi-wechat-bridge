@@ -37,7 +37,7 @@ export function isBoundSession(session?: SessionConfig): boolean {
 }
 
 export async function loadConfig(configPath?: string): Promise<BridgeConfig> {
-  const path = configPath ?? DEFAULT_CONFIG_PATH
+  const path = configPath ?? process.env.PI_WECHAT_BRIDGE_CONFIG ?? DEFAULT_CONFIG_PATH
   let raw: string
 
   try {

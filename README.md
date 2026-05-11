@@ -104,7 +104,7 @@ npm start
 
 ### 配置说明
 
-默认配置文件：`~/.pi/agent/pi-wechat-bridge.json`
+默认配置文件：`~/.pi/agent/pi-wechat-bridge.json`，可用 `PI_WECHAT_BRIDGE_CONFIG` 覆盖
 
 ```json
 {
