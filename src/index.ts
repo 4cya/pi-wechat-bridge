@@ -14,6 +14,9 @@
 
 import { WeChatBot, stripMarkdown } from '@wechatbot/wechatbot'
 import type { IncomingMessage } from '@wechatbot/wechatbot'
+import { mkdir, mkdtemp, writeFile } from 'node:fs/promises'
+import { join, resolve } from 'node:path'
+import { tmpdir } from 'node:os'
 import { loadConfig, getSessionKeyword, isBoundSession } from './config.js'
 import { parseRoute, extractPayload } from './router.js'
 import { SessionPool } from './session-pool.js'
@@ -57,6 +60,34 @@ async function main() {
       imageBuffers.set(key, new ImageBuffer(5 * 60 * 1000))
     }
     return imageBuffers.get(key)!
+  }
+
+  // 4b. Temp image cache root (for path-based handoff to Pi)
+  const tempImageRoot = await mkdtemp(join(tmpdir(), 'pi-wechat-bridge-'))
+  const getTempImageDir = async (sessionKey: string) => {
+    const dir = join(tempImageRoot, sessionKey)
+    await mkdir(dir, { recursive: true })
+    return dir
+  }
+  const mimeToExt = (mimeType: string) => {
+    const lower = mimeType.toLowerCase()
+    if (lower.includes('png')) return 'png'
+    if (lower.includes('webp')) return 'webp'
+    if (lower.includes('gif')) return 'gif'
+    return 'jpg'
+  }
+  const saveImagesToTemp = async (sessionKey: string, images: ImageEntry[]) => {
+    if (images.length === 0) return [] as string[]
+    const dir = await getTempImageDir(sessionKey)
+    const stamp = Date.now()
+    return Promise.all(
+      images.map(async (img, index) => {
+        const fileName = `${stamp}-${index + 1}.${mimeToExt(img.mimeType)}`
+        const fullPath = join(dir, fileName)
+        await writeFile(fullPath, Buffer.from(img.data, 'base64'))
+        return fullPath
+      }),
+    )
   }
 
   // 5. Create session pool
@@ -204,7 +235,7 @@ async function main() {
           return
         }
 
-        // Text present → merge with buffered images, then send
+        // Text present → merge with buffered images, then send image paths to AI
         const allImages = [...buffer.flush(), ...images]
         const payload = extractPayload(text!, sessionCfg.command!)
 
@@ -214,14 +245,14 @@ async function main() {
         }
 
         const finalText = payload ?? text ?? ''
+        const imagePaths = allImages.length > 0 ? await saveImagesToTemp(sessionKey, allImages) : []
+        const finalPrompt = imagePaths.length > 0
+          ? `${finalText}\n\n图片已保存到服务器临时目录，请先读取以下文件：\n${imagePaths.map((p, i) => `${i + 1}. ${p}`).join('\n')}`
+          : finalText
 
-        console.log(`[${sessionKey}] → ${finalText.slice(0, 80)}${allImages.length ? ` + ${allImages.length} image(s)` : ''}`)
+        console.log(`[${sessionKey}] → ${finalText.slice(0, 80)}${imagePaths.length ? ` + ${imagePaths.length} image path(s)` : ''}`)
 
-        await pool.send(
-          finalText,
-          allImages.length > 0 ? allImages.map((i) => ({ data: i.data, mimeType: i.mimeType })) : undefined,
-          sessionKey,
-        )
+        await pool.send(finalPrompt, undefined, sessionKey)
 
         return
       }
