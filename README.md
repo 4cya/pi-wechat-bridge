@@ -123,7 +123,7 @@ npm start
 ```
 
 - session key 就是 keyword，只允许英文字母/数字，命令自动生成为 `/<keyword>`
-- `replyPrefix`: AI 回复第一行加 `————[keyword]————`（默认 true）
+- `replyPrefix`: AI 回复第一行加 `[keyword]`，下一行开始正文（默认 true）
 - `defaultSession`: 启动后默认使用的 keyword
 - 只有已绑定 `binding.sessionFile` 的 session 才接收微信转发；未绑定仅保留 push
 - 桥接器通过 `SessionManager.open(sessionFile)` 打开已绑定会话，回复仍通过 Pi SDK 回读
