@@ -343,40 +343,19 @@ export class PushServer {
   }
 
   /**
-   * Send a single image to WeChat.
+   * Send a single image to WeChat using the documented wechatbot content format.
    * Returns true if successful, false otherwise.
    */
   private async sendImage(userId: string, image: ImagePayload): Promise<boolean> {
-    // Try the SDK's sendImage method (user confirmed SDK supports it)
-    const botAny = this.bot as any
-
-    if (typeof botAny.sendImage === 'function') {
-      try {
-        const buffer = Buffer.from(image.data, 'base64')
-        await botAny.sendImage(userId, buffer, image.mimeType)
-        return true
-      } catch (e) {
-        // SDK method exists but call failed — try alternative approach
-        console.warn(`[push] sendImage() threw, trying alternative:`, e instanceof Error ? e.message : String(e))
-      }
+    try {
+      await this.bot.send(userId, {
+        image: Buffer.from(image.data, 'base64'),
+      })
+      return true
+    } catch (e) {
+      console.warn(`[push] image send failed:`, e instanceof Error ? e.message : String(e))
+      return false
     }
-
-    // Fallback: try send() with image attachment format
-    if (typeof botAny.send === 'function') {
-      try {
-        // Some WeChatBot versions support rich message format
-        await botAny.send(userId, {
-          type: 'image',
-          data: Buffer.from(image.data, 'base64'),
-          mimeType: image.mimeType,
-        })
-        return true
-      } catch {
-        // both approaches failed
-      }
-    }
-
-    return false
   }
 
   // ── Harness: Constrain — Rate limiting ──────────────────────────
