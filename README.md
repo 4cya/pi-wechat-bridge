@@ -68,6 +68,7 @@ npm start
 | `/wechat` | 切换到 wechat |
 | `/english` | 切换到 english |
 | `/quant` | 切换到 quant |
+| `/list` | 列出已绑定的会话 |
 | `/sessions` | 列出所有 keyword |
 | `/help` | 显示帮助 |
 

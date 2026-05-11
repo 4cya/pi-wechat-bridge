@@ -20,14 +20,28 @@ export function parseRoute(
 
   const lower = trimmed.toLowerCase()
 
-  // /sessions — list all sessions
-  if (lower === '/sessions' || lower === '/list') {
+  // /list — list bound sessions only
+  if (lower === '/list') {
     const list = Object.keys(config.sessions)
+      .filter((key) => !!config.sessions[key]?.binding?.sessionFile)
       .map((key) => getSessionCommand(key))
-      .join(' ')
+      .join('\n')
     return {
       action: 'list',
-      message: `可用会话：${list}\n当前：[${getSessionKeyword(currentSession)}]`,
+      message: list
+        ? `已绑定的会话列表：\n${list}`
+        : '已绑定的会话列表：\n暂无',
+    }
+  }
+
+  // /sessions — list all sessions
+  if (lower === '/sessions') {
+    const list = Object.keys(config.sessions)
+      .map((key) => getSessionCommand(key))
+      .join('\n')
+    return {
+      action: 'list',
+      message: `所有会话：\n${list}\n当前：[${getSessionKeyword(currentSession)}]`,
     }
   }
 

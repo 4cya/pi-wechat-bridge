@@ -67,7 +67,7 @@ async function main() {
     const clean = stripMarkdown(text)
 
     const keyword = getSessionKeyword(sessionKey)
-    const prefix = config.replyPrefix ? `————[${keyword}]————\n` : ''
+    const prefix = config.replyPrefix ? `————[${keyword}]————\n\n` : ''
     const final = prefix + clean
 
     // Send to WeChat — note: we don't have the original msg here,
