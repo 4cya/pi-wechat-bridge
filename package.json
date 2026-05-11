@@ -1,7 +1,7 @@
 {
   "name": "pi-wechat-bridge",
   "version": "0.1.0",
-  "description": "在微信中管理多个 Pi Agent 会话，支持 #work / #chat / #english 一键切换，图片缓存合并，多会话并发处理。One WeChat, multiple AI coding sessions.",
+  "description": "在微信中管理多个 Pi Agent 会话，支持 /wechat /english /quant 路由、绑定固定 sessionFile、图片缓存合并与独立 push 接口。One WeChat, multiple AI coding sessions.",
   "type": "module",
   "main": "dist/index.js",
   "bin": {

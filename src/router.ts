@@ -1,4 +1,5 @@
-import type { BridgeConfig, SessionConfig } from './config.js'
+import type { BridgeConfig } from './config.js'
+import { getSessionCommand, getSessionKeyword } from './config.js'
 
 export interface RouteResult {
   action: 'switch' | 'route' | 'list' | 'unknown'
@@ -21,24 +22,23 @@ export function parseRoute(
 
   // /sessions — list all sessions
   if (lower === '/sessions' || lower === '/list') {
-    const list = Object.entries(config.sessions)
-      .map(([key, s]) => `${s.command} → ${s.name} (${key})`)
-      .join('\n')
+    const list = Object.keys(config.sessions)
+      .map((key) => getSessionCommand(key))
+      .join(' ')
     return {
       action: 'list',
-      message: `可用会话：\n${list}\n\n当前：[${config.sessions[currentSession]?.name ?? currentSession}]`,
+      message: `可用会话：${list}\n当前：[${getSessionKeyword(currentSession)}]`,
     }
   }
 
   // /help
   if (lower === '/help') {
+    const commands = Object.keys(config.sessions)
+      .map((key) => getSessionCommand(key))
+      .join(' ')
     return {
       action: 'list',
-      message: `指令说明：
-/wechat /english /quant → 切换会话
-/sessions → 列出所有会话
-/help → 显示帮助
-当前会话：[${config.sessions[currentSession]?.name ?? currentSession}]`,
+      message: `指令说明：\n${commands} → 切换会话\n/sessions → 列出所有会话\n/help → 显示帮助\n当前会话：[${getSessionKeyword(currentSession)}]`,
     }
   }
 
@@ -50,19 +50,19 @@ export function parseRoute(
 
   const command = match[1].toLowerCase()
 
-  for (const [key, session] of Object.entries(config.sessions)) {
-    if (session.command.toLowerCase() === command) {
+  for (const [key] of Object.entries(config.sessions)) {
+    if (getSessionCommand(key) === command) {
       if (key === currentSession) {
         return {
           action: 'route',
           targetSession: key,
-          message: `已在当前会话 [${session.name}]`,
+          message: `已在当前会话 [${getSessionKeyword(key)}]`,
         }
       }
       return {
         action: 'switch',
         targetSession: key,
-        displayName: session.name,
+        displayName: getSessionKeyword(key),
       }
     }
   }

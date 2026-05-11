@@ -1,4 +1,5 @@
 import type { SessionConfig, BridgeConfig } from './config.js'
+import { getSessionCommand, getSessionKeyword } from './config.js'
 import type { ImageEntry } from './image-buffer.js'
 
 // ── Pi Session abstraction ─────────────────────────────────────────
@@ -60,13 +61,13 @@ export class SessionPool {
   }
 
   getSessionName(key: string): string {
-    return this.config.sessions[key]?.name ?? key
+    return getSessionKeyword(key)
   }
 
   getAvailableCommands(): string {
-    return Object.values(this.config.sessions)
-      .map((s) => s.command)
-      .join(' / ')
+    return Object.keys(this.config.sessions)
+      .map((key) => getSessionCommand(key))
+      .join(' ')
   }
 
   switchTo(key: string): string {
@@ -74,8 +75,7 @@ export class SessionPool {
       return `未知会话 "${key}"，可用：${this.getAvailableCommands()}`
     }
     this.currentKey = key
-    const name = this.config.sessions[key].name
-    return `已切换到 [${name}]`
+    return `已切换到 [${getSessionKeyword(key)}]`
   }
 
   /** Queue a prompt to the current session. Returns immediately, response via callback. */
@@ -91,7 +91,7 @@ export class SessionPool {
       return
     }
 
-    const sessionName = entry.config.name
+    const sessionName = getSessionKeyword(key)
 
     // Chain: wait for previous processing to finish, then run this one
     const prev = entry.processing

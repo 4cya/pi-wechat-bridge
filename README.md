@@ -22,9 +22,9 @@
 **pi-wechat-bridge** 是一个微信桥接器，让你在微信中同时管理多个 AI 编程助手会话。
 
 你可以在一个微信聊天窗口里：
-- 用 `/work` 切换到**工作会话**（写代码、改 bug）
-- 用 `/english` 切换到**英语学习会话**（练口语、纠语法）
-- 用 `/chat` 切换到**聊天会话**（日常问答）
+- 用 `/wechat` 切换到 `wechat`
+- 用 `/english` 切换到 `english`
+- 用 `/quant` 切换到 `quant`
 - 指令不区分大小写：`/English` `/ENGLISH` 均可
 
 不同会话之间**并发处理**，互不阻塞。每个会话都有自己的工作目录和规则。
@@ -49,9 +49,10 @@ npm install
 # 2. 安装 Pi Agent（如果还没有）
 npm install -g @earendil-works/pi-coding-agent
 
-# 3. 创建配置
-cp sessions.example.json sessions.json
-# 编辑 sessions.json，改成你的目录
+# 3. 创建全局配置
+mkdir -p ~/.pi/agent
+cp sessions.example.json ~/.pi/agent/pi-wechat-bridge.json
+# 编辑 ~/.pi/agent/pi-wechat-bridge.json
 
 # 4. 启动
 npm start
@@ -64,10 +65,10 @@ npm start
 
 | 指令 | 作用 |
 |---|---|
-| `/work` | 切换到工作会话 |
-| `/english` | 切换到英语会话 |
-| `/chat` | 切换到聊天会话 |
-| `/sessions` | 列出所有可用会话 |
+| `/wechat` | 切换到 wechat |
+| `/english` | 切换到 english |
+| `/quant` | 切换到 quant |
+| `/sessions` | 列出所有 keyword |
 | `/help` | 显示帮助 |
 
 ### 图片缓存
@@ -103,33 +104,36 @@ npm start
 
 ### 配置说明
 
-`sessions.json`:
+默认配置文件：`~/.pi/agent/pi-wechat-bridge.json`
+
 ```json
 {
-  "defaultSession": "chat",
+  "defaultSession": "wechat",
   "replyPrefix": true,
   "sessions": {
-    "work": {
-      "name": "工作",
-      "cwd": "/home/ubuntu/work/code",
-      "command": "/work"
+    "wechat": {
+      "cwd": "/home/ubuntu/work/wechat_assistant",
+      "binding": {
+        "sessionFile": "/home/ubuntu/.pi/agent/sessions/--home-ubuntu-work-wechat_assistant--/example.jsonl"
+      }
     }
   }
 }
 ```
 
-- `replyPrefix`: AI 回复前加 `[工作]` 前缀（默认 true）
-- `defaultSession`: 启动后默认使用的会话
-- 每个 session 必须定义 `cwd` 和 `command`
-- 同一 `cwd` 下的微信消息会继续写入该目录最近的 Pi session，方便电脑端 `resume` 接着聊
+- session key 就是 keyword，只允许英文字母/数字，命令自动生成为 `/<keyword>`
+- `replyPrefix`: AI 回复第一行加 `————[keyword]————`（默认 true）
+- `defaultSession`: 启动后默认使用的 keyword
+- 只有已绑定 `binding.sessionFile` 的 session 才接收微信转发；未绑定仅保留 push
+- 桥接器通过 `SessionManager.open(sessionFile)` 打开已绑定会话，回复仍通过 Pi SDK 回读
 
 ### 推送接口（外部服务 → 微信）
 
-桥接程序启动后自动监听 HTTP 端口，外部服务（如市场监控 daemon）可通过 `/push` 端点向微信推送文字和图片消息。图片发送已改为使用 `wechatbot` 文档中的 `bot.send(userId, { image })` 格式。**推送接口完全独立于 session 系统，不影响原有会话逻辑。**
+桥接程序启动后自动监听 HTTP 端口，外部服务（如市场监控 daemon）可通过 `/push` 端点向微信推送文字和图片消息。图片发送使用 `wechatbot` 文档中的 `bot.send(userId, { image })` 格式。**push 接口完全独立于 session 绑定系统，不受未绑定 session 限制。**
 
 #### 配置
 
-`sessions.json` 中 `pushServer` 字段：
+`~/.pi/agent/pi-wechat-bridge.json` 中 `pushServer` 字段：
 
 ```json
 {
@@ -225,7 +229,7 @@ def notify_wechat(text: str, images: list[dict] | None = None):
 - **Persistent cwd binding**: each bridge session attaches to the latest Pi session in the same project directory
 - **Concurrent processing**: each session runs independently, no blocking
 - **Image buffering**: send images first, then text — merged automatically
-- **Reply prefix**: `[wechat]` / `[english]` labels on every AI response
+- **Reply prefix**: first line uses `————[keyword]————`
 - **Push API**: external services (e.g. market monitors) can push text + images to WeChat via HTTP
 - **Pluggable adapters**: Pi Agent, Claude Code, Codex, OpenCode
 - **Full WeChat media**: text, images, voice, video, files — powered by [@wechatbot/wechatbot](https://github.com/corespeed-io/wechatbot)
@@ -235,8 +239,9 @@ def notify_wechat(text: str, images: list[dict] | None = None):
 ```bash
 git clone https://github.com/4cya/pi-wechat-bridge.git
 cd pi-wechat-bridge && npm install
-cp sessions.example.json sessions.json  # edit first
-npm start                                # scan QR, done!
+mkdir -p ~/.pi/agent
+cp sessions.example.json ~/.pi/agent/pi-wechat-bridge.json
+npm start
 ```
 
 ### PM2 (recommended for servers)

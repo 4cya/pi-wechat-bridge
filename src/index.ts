@@ -14,7 +14,7 @@
 
 import { WeChatBot, stripMarkdown } from '@wechatbot/wechatbot'
 import type { IncomingMessage } from '@wechatbot/wechatbot'
-import { loadConfig } from './config.js'
+import { loadConfig, getSessionKeyword, isBoundSession } from './config.js'
 import { parseRoute, extractPayload } from './router.js'
 import { SessionPool } from './session-pool.js'
 import { ImageBuffer, type ImageEntry } from './image-buffer.js'
@@ -36,15 +36,15 @@ async function main() {
   console.log('╚══════════════════════════════════════╝\n')
 
   // 1. Load config
-  const config = await loadConfig(configPath)
+  let config = await loadConfig(configPath)
   console.log(`✓ Config loaded: ${Object.keys(config.sessions).length} sessions`)
   for (const [key, s] of Object.entries(config.sessions)) {
-    console.log(`  ${s.command} → ${s.name} (${s.cwd})`)
+    console.log(`  /${getSessionKeyword(key)} (${s.cwd})${isBoundSession(s) ? '' : ' [unbound]'}`)
   }
   console.log(`  Default: ${config.defaultSession}`)
 
   // 2. Initialize Pi adapter
-  const adapter = new PiAgentAdapter()
+  const adapter = new PiAgentAdapter(configPath)
   console.log('\n⏳ Initializing Pi sessions...')
 
   // 3. Initialize WeChat bot
@@ -66,9 +66,8 @@ async function main() {
     // Clean markdown for WeChat
     const clean = stripMarkdown(text)
 
-    // Add prefix using command name (e.g., [english]) instead of Chinese name
-    const cmd = config.sessions[sessionKey]?.command?.replace('/', '') ?? sessionKey
-    const prefix = config.replyPrefix ? `[${cmd}]\n` : ''
+    const keyword = getSessionKeyword(sessionKey)
+    const prefix = config.replyPrefix ? `————[${keyword}]————\n` : ''
     const final = prefix + clean
 
     // Send to WeChat — note: we don't have the original msg here,
@@ -126,6 +125,10 @@ async function main() {
   // 8. Handle incoming WeChat messages
   bot.onMessage(async (msg: IncomingMessage) => {
     activeUserId = msg.userId
+    config = await loadConfig(configPath)
+    if (!config.sessions[currentSession]) {
+      currentSession = config.defaultSession
+    }
 
     try {
       await bot.sendTyping(msg.userId)
@@ -147,23 +150,21 @@ async function main() {
       case 'switch': {
         const newKey = route.targetSession!
         currentSession = newKey
-        const switched = pool.switchTo(currentSession)
+        pool.switchTo(currentSession)
         // Clear image buffer on session switch
         getBuffer(currentSession).clear()
 
         // Extract payload after the command (e.g., "/English how are you" → "how are you")
         const sessionCfg = config.sessions[newKey]
-        const payload = extractPayload(text!, sessionCfg.command)
-
-        // Switch confirmation uses command name (e.g., [english]), consistent with AI reply prefix
-        const cmd = sessionCfg.command.replace('/', '')
+        const payload = extractPayload(text!, sessionCfg.command!)
+        const keyword = getSessionKeyword(newKey)
 
         if (payload) {
           console.log(`[${newKey}] → ${payload.slice(0, 80)}`)
-          await sendReply(bot, msg, `[${cmd}] ${switched}`)
+          await sendReply(bot, msg, `已切换到 [${keyword}]`)
           await pool.send(payload, undefined, newKey)
         } else {
-          await sendReply(bot, msg, `[${cmd}] ${switched}`)
+          await sendReply(bot, msg, `已切换到 [${keyword}]`)
         }
         return
       }
@@ -180,10 +181,16 @@ async function main() {
         const hasText = !!text
         const hasImages = images.length > 0
 
+        if (!isBoundSession(sessionCfg)) {
+          buffer.clear()
+          await sendReply(bot, msg, `会话 [${getSessionKeyword(sessionKey)}] 未绑定，仅保留 push`)
+          return
+        }
+
         // Check expired buffer
         if (buffer.isExpired()) {
           buffer.clear()
-          await sendReply(bot, msg, `[${sessionCfg.name}]\n图片已过期，请重新发送`)
+          await sendReply(bot, msg, `会话 [${getSessionKeyword(sessionKey)}] 图片已过期，请重新发送`)
           return
         }
 
@@ -199,7 +206,7 @@ async function main() {
 
         // Text present → merge with buffered images, then send
         const allImages = [...buffer.flush(), ...images]
-        const payload = extractPayload(text!, sessionCfg.command)
+        const payload = extractPayload(text!, sessionCfg.command!)
 
         if (payload === null && allImages.length === 0) {
           // Pure switch command with no extra text — already handled above

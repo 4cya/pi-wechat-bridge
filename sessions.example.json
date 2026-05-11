@@ -13,19 +13,19 @@
   },
   "sessions": {
     "wechat": {
-      "name": "微信助手",
-      "cwd": "/home/ubuntu/work/wechat",
-      "command": "/wechat"
+      "cwd": "/home/ubuntu/work/wechat_assistant",
+      "binding": {
+        "sessionFile": "/home/ubuntu/.pi/agent/sessions/--home-ubuntu-work-wechat_assistant--/example.jsonl"
+      }
     },
     "english": {
-      "name": "英语学习",
       "cwd": "/home/ubuntu/work/english",
-      "command": "/english"
+      "binding": {
+        "sessionFile": "/home/ubuntu/.pi/agent/sessions/--home-ubuntu-work-english--/example.jsonl"
+      }
     },
     "quant": {
-      "name": "量化分析",
-      "cwd": "/home/ubuntu/work/quant",
-      "command": "/quant"
+      "cwd": "/home/ubuntu/work/quant"
     }
   }
 }

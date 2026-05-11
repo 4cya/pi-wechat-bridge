@@ -5,7 +5,9 @@
  * implement the PiSessionFactory interface and swap this adapter.
  */
 
+import { access } from 'node:fs/promises'
 import type { PiSession, PiSessionFactory } from './session-pool.js'
+import { DEFAULT_CONFIG_PATH, loadConfig } from './config.js'
 
 // Lazy import — Pi SDK must be installed globally or locally
 let createAgentSession: any = null
@@ -48,6 +50,11 @@ export class PiAgentAdapter implements PiSessionFactory {
   private authStorage: any
   private modelRegistry: any
   private initialized = false
+  private configPath: string
+
+  constructor(configPath?: string) {
+    this.configPath = configPath ?? DEFAULT_CONFIG_PATH
+  }
 
   async init(): Promise<void> {
     await ensurePiSdk()
@@ -58,26 +65,48 @@ export class PiAgentAdapter implements PiSessionFactory {
     }
   }
 
-  async create(cwd: string, _sessionKey: string): Promise<PiSession> {
+  async create(cwd: string, sessionKey: string): Promise<PiSession> {
     await this.init()
-
-    // Bind WeChat routing to the project’s persisted Pi session history.
-    // This makes the bridge attach to the latest session in the same cwd,
-    // so WeChat and local `resume`/`continue` share the same context.
-    const sessionMgr = SessionManager.continueRecent(cwd)
-
-    const { session } = await createAgentSession({
-      sessionManager: sessionMgr,
-      authStorage: this.authStorage,
-      modelRegistry: this.modelRegistry,
-      cwd,
-    })
 
     return {
       prompt: async (text, images) => {
+        const config = await loadConfig(this.configPath)
+        const sessionCfg = config.sessions[sessionKey]
+        const sessionFile = sessionCfg?.binding?.sessionFile
+
+        if (!sessionFile) {
+          throw new Error(`session [${sessionKey}] is not bound`)
+        }
+
+        await access(sessionFile)
+
+        const sessionMgr = SessionManager.open(sessionFile)
+        const { session } = await createAgentSession({
+          sessionManager: sessionMgr,
+          authStorage: this.authStorage,
+          modelRegistry: this.modelRegistry,
+          cwd,
+        })
+
         return new Promise<string>((resolve, reject) => {
           let responseText = ''
           let resolved = false
+
+          const finish = (value: string, isError = false) => {
+            if (resolved) return
+            resolved = true
+            unsubscribe()
+            try {
+              session.dispose()
+            } catch {
+              // ignore
+            }
+            if (isError) {
+              reject(new Error(value))
+            } else {
+              resolve(value)
+            }
+          }
 
           const unsubscribe = session.subscribe((event: any) => {
             try {
@@ -89,40 +118,26 @@ export class PiAgentAdapter implements PiSessionFactory {
               }
 
               if (event.type === 'agent_end') {
-                if (!resolved) {
-                  resolved = true
-                  unsubscribe()
-                  // Also collect from messages array as fallback
-                  if (!responseText.trim() && event.messages) {
-                    for (const msg of event.messages) {
-                      if (msg.role === 'assistant') {
-                        for (const block of msg.content) {
-                          if (block.type === 'text') responseText += block.text
-                        }
+                if (!responseText.trim() && event.messages) {
+                  for (const msg of event.messages) {
+                    if (msg.role === 'assistant') {
+                      for (const block of msg.content) {
+                        if (block.type === 'text') responseText += block.text
                       }
                     }
                   }
-                  resolve(responseText)
                 }
+                finish(responseText)
               }
 
               if (event.type === 'agent_error') {
-                if (!resolved) {
-                  resolved = true
-                  unsubscribe()
-                  reject(new Error(event.error?.message ?? 'Agent error'))
-                }
+                finish(event.error?.message ?? 'Agent error', true)
               }
             } catch (e) {
-              if (!resolved) {
-                resolved = true
-                unsubscribe()
-                reject(e)
-              }
+              finish(e instanceof Error ? e.message : String(e), true)
             }
           })
 
-          // Send the prompt
           const promptOptions: any = {}
           if (images && images.length > 0) {
             promptOptions.images = images.map((img) => ({
@@ -136,30 +151,17 @@ export class PiAgentAdapter implements PiSessionFactory {
           }
 
           session.prompt(text, promptOptions).catch((err: any) => {
-            if (!resolved) {
-              resolved = true
-              unsubscribe()
-              reject(err)
-            }
+            finish(err instanceof Error ? err.message : String(err), true)
           })
 
-          // Timeout after 5 minutes
           setTimeout(() => {
-            if (!resolved) {
-              resolved = true
-              unsubscribe()
-              resolve(responseText || '[No response — timeout]')
-            }
+            finish(responseText || '[No response — timeout]')
           }, 5 * 60 * 1000)
         })
       },
 
       dispose: () => {
-        try {
-          session.dispose()
-        } catch {
-          // ignore
-        }
+        // No long-lived session kept in memory.
       },
     }
   }
