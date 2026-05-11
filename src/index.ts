@@ -19,6 +19,7 @@ import { parseRoute, extractPayload } from './router.js'
 import { SessionPool } from './session-pool.js'
 import { ImageBuffer, type ImageEntry } from './image-buffer.js'
 import { PiAgentAdapter } from './pi-adapter.js'
+import { PushServer } from './push-server.js'
 
 // ── Parse CLI args ──────────────────────────────────────────────────
 
@@ -90,6 +91,14 @@ async function main() {
 
   // 6. Track active WeChat user
   let activeUserId: string | null = null
+
+  // 6b. Initialize Push Server (independent of session logic)
+  const pushServer = new PushServer(
+    bot,
+    config.pushServer,
+    () => activeUserId,  // resolves target user at push time
+  )
+  pushServer.start()
 
   // 7. WeChat login
   console.log('\n⏳ Connecting to WeChat...')
@@ -226,6 +235,7 @@ async function main() {
   // 10. Graceful shutdown
   process.on('SIGINT', async () => {
     console.log('\nShutting down...')
+    await pushServer.stop()
     bot.stop()
     await pool.dispose()
     process.exit(0)
@@ -233,6 +243,7 @@ async function main() {
 
   process.on('SIGTERM', async () => {
     console.log('\nShutting down...')
+    await pushServer.stop()
     bot.stop()
     await pool.dispose()
     process.exit(0)

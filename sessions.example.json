@@ -1,6 +1,16 @@
 {
   "defaultSession": "wechat",
   "replyPrefix": true,
+  "pushServer": {
+    "enabled": true,
+    "port": 9876,
+    "host": "127.0.0.1",
+    "authToken": "your-secret-token-change-me",
+    "maxTextLength": 2000,
+    "maxImages": 3,
+    "maxPushesPerMinute": 10,
+    "logPath": "./push-log.jsonl"
+  },
   "sessions": {
     "wechat": {
       "name": "微信助手",

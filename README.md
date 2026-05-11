@@ -123,6 +123,88 @@ npm start
 - 每个 session 必须定义 `cwd` 和 `command`
 - 同一 `cwd` 下的微信消息会继续写入该目录最近的 Pi session，方便电脑端 `resume` 接着聊
 
+### 推送接口（外部服务 → 微信）
+
+桥接程序启动后自动监听 HTTP 端口，外部服务（如市场监控 daemon）可通过 `/push` 端点向微信推送文字和图片消息。**推送接口完全独立于 session 系统，不影响原有会话逻辑。**
+
+#### 配置
+
+`sessions.json` 中 `pushServer` 字段：
+
+```json
+{
+  "pushServer": {
+    "enabled": true,
+    "port": 9876,
+    "host": "127.0.0.1",
+    "authToken": "your-secret-token-change-me",
+    "maxTextLength": 2000,
+    "maxImages": 3,
+    "maxPushesPerMinute": 10,
+    "logPath": "./push-log.jsonl"
+  }
+}
+```
+
+| 字段 | 默认值 | 说明 |
+|------|--------|------|
+| `enabled` | `false` | 是否启用推送服务器 |
+| `port` | `9876` | HTTP 监听端口 |
+| `host` | `127.0.0.1` | 绑定地址（建议仅本地） |
+| `authToken` | — | Bearer Token 鉴权，为空则跳过鉴权 |
+| `maxTextLength` | `2000` | 单次推送文本上限 |
+| `maxImages` | `3` | 单次推送图片上限 |
+| `maxPushesPerMinute` | `10` | 每分钟推送频率限制 |
+| `logPath` | — | 推送日志文件路径 |
+
+#### 调用示例
+
+```bash
+# 纯文字推送
+curl -X POST http://127.0.0.1:9876/push \
+  -H "Authorization: Bearer your-secret-token-change-me" \
+  -H "Content-Type: application/json" \
+  -d '{"text": "BTC跌破65000，当前$64,800"}'
+
+# 文字 + 图片推送（图片为 base64）
+curl -X POST http://127.0.0.1:9876/push \
+  -H "Authorization: Bearer your-secret-token-change-me" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "BTC跌破65000",
+    "images": [{"data": "iVBORw0...", "mimeType": "image/png"}]
+  }'
+```
+
+#### 响应
+
+| 状态码 | 说明 |
+|--------|------|
+| `200` | 推送成功 `{"ok":true,"textSent":true,"imagesSent":2}` |
+| `400` | 参数校验失败（缺少 text、base64 格式错误、超长等） |
+| `401` | 鉴权失败 |
+| `429` | 频率限制 |
+| `503` | 无活跃微信用户（需先向 bot 发一条消息） |
+
+#### 与 market-watch 等监控工具对接
+
+```python
+import requests
+
+def notify_wechat(text: str, images: list[dict] | None = None):
+    return requests.post(
+        "http://127.0.0.1:9876/push",
+        headers={
+            "Authorization": "Bearer your-secret-token",
+            "Content-Type": "application/json",
+        },
+        json={"text": text, "images": images or []},
+        timeout=10,
+    ).json()
+```
+
+> ⚠️ **前置条件**: 用户须先在微信中向 bot 发送至少一条消息，桥接程序才能获取目标用户 ID 用于推送。
+
 ---
 
 ## English
@@ -138,6 +220,7 @@ npm start
 - **Concurrent processing**: each session runs independently, no blocking
 - **Image buffering**: send images first, then text — merged automatically
 - **Reply prefix**: `[wechat]` / `[english]` labels on every AI response
+- **Push API**: external services (e.g. market monitors) can push text + images to WeChat via HTTP
 - **Pluggable adapters**: Pi Agent, Claude Code, Codex, OpenCode
 - **Full WeChat media**: text, images, voice, video, files — powered by [@wechatbot/wechatbot](https://github.com/corespeed-io/wechatbot)
 
@@ -180,18 +263,18 @@ WeChat (phone)
 iLink API ←── @wechatbot/wechatbot
     │
     ▼
-┌─────────────────────────┐
-│   pi-wechat-bridge      │
-│                         │
-│  Router (/xxx)          │
-│    │                    │
-│  Session Pool           │
-│   ├── [work]  cwd: /code│
-│   ├── [english]         │
-│   └── [chat]            │
-│    │                    │
-│  Pi Adapter (SDK)       │
-└─────────────────────────┘
+┌──────────────────────────────────────────┐
+│            pi-wechat-bridge               │
+│                                           │
+│  Router (/xxx)          Push Server (:9876)│
+│    │                        │             │
+│  Session Pool            POST /push       │
+│   ├── [work]  ┌──────── external svc     │
+│   ├── [english]        (market-watch,    │
+│   └── [chat]            cron jobs, etc.) │
+│    │                                      │
+│  Pi Adapter (SDK)                        │
+└──────────────────────────────────────────┘
 ```
 
 ## License

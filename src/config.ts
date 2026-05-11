@@ -1,6 +1,8 @@
 import { readFile } from 'node:fs/promises'
 import { resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import type { PushServerConfig } from './push-server.js'
+import { DEFAULT_PUSH_CONFIG } from './push-server.js'
 
 export interface SessionConfig {
   name: string
@@ -12,6 +14,7 @@ export interface BridgeConfig {
   defaultSession: string
   replyPrefix: boolean
   sessions: Record<string, SessionConfig>
+  pushServer: PushServerConfig
 }
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -69,4 +72,10 @@ function validateConfig(config: BridgeConfig): void {
   }
 
   config.replyPrefix = config.replyPrefix !== false // default true
+
+  // Merge pushServer defaults (Harness: constrain with safe defaults)
+  config.pushServer = {
+    ...DEFAULT_PUSH_CONFIG,
+    ...(config.pushServer ?? {}),
+  }
 }
