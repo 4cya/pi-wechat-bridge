@@ -5,3 +5,5 @@ dist/
 sessions.json
 ecosystem.config.cjs
 ecosystem.example.config.cjs
+
+push-log.jsonl

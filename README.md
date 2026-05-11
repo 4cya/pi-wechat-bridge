@@ -166,6 +166,12 @@ curl -X POST http://127.0.0.1:9876/push \
   -H "Content-Type: application/json" \
   -d '{"text": "BTC跌破65000，当前$64,800"}'
 
+# 仅图片推送（text 可省略）
+curl -X POST http://127.0.0.1:9876/push \
+  -H "Authorization: Bearer your-secret-token-change-me" \
+  -H "Content-Type: application/json" \
+  -d '{"images": [{"data": "iVBORw0...", "mimeType": "image/png"}]}'
+
 # 文字 + 图片推送（图片为 base64）
 curl -X POST http://127.0.0.1:9876/push \
   -H "Authorization: Bearer your-secret-token-change-me" \
@@ -181,7 +187,7 @@ curl -X POST http://127.0.0.1:9876/push \
 | 状态码 | 说明 |
 |--------|------|
 | `200` | 推送成功 `{"ok":true,"textSent":true,"imagesSent":2}` |
-| `400` | 参数校验失败（缺少 text、base64 格式错误、超长等） |
+| `400` | 参数校验失败（base64 格式错误、超长等） |
 | `401` | 鉴权失败 |
 | `429` | 频率限制 |
 | `503` | 无活跃微信用户（需先向 bot 发一条消息） |

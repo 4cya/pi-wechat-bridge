@@ -39,7 +39,7 @@ export interface ImagePayload {
 }
 
 export interface PushRequest {
-  text: string
+  text?: string
   images?: ImagePayload[]
 }
 
@@ -94,12 +94,15 @@ function validatePushBody(body: unknown): PushRequest {
 
   const obj = body as Record<string, unknown>
 
-  // text: required, non-empty string
-  if (typeof obj.text !== 'string' || obj.text.trim().length === 0) {
-    throw new PushValidationError('"text" is required and must be a non-empty string')
-  }
+  const result: PushRequest = {}
 
-  const result: PushRequest = { text: obj.text.trim() }
+  // text: optional, but if present must be a non-empty string
+  if (obj.text !== undefined) {
+    if (typeof obj.text !== 'string' || obj.text.trim().length === 0) {
+      throw new PushValidationError('"text" must be a non-empty string when provided')
+    }
+    result.text = obj.text.trim()
+  }
 
   // images: optional array
   if (obj.images !== undefined) {
@@ -250,7 +253,7 @@ export class PushServer {
     }
 
     // ── Harness: Constrain — Size caps ─────────────────────────
-    if (pushReq.text.length > this.config.maxTextLength) {
+    if (pushReq.text && pushReq.text.length > this.config.maxTextLength) {
       this.jsonReply(res, 400, {
         error: `Text too long (${pushReq.text.length} chars). Max: ${this.config.maxTextLength}`,
       })
@@ -266,7 +269,7 @@ export class PushServer {
     // ── Resolve target user ────────────────────────────────────
     const userId = this.getUserId()
     if (!userId) {
-      this.logPush({ ts: new Date().toISOString(), text: pushReq.text, imageCount: pushReq.images?.length ?? 0, success: false, error: 'No active WeChat user. Send a message to the bot first.' })
+      this.logPush({ ts: new Date().toISOString(), text: pushReq.text ?? '', imageCount: pushReq.images?.length ?? 0, success: false, error: 'No active WeChat user. Send a message to the bot first.' })
       this.jsonReply(res, 503, {
         error: 'No active WeChat user. Send a message to the bot first, then retry.',
       })
@@ -295,16 +298,20 @@ export class PushServer {
     let textSent = false
     let imagesSent = 0
 
-    // 1. Send text (primary — must succeed)
-    try {
-      await this.bot.send(userId, req.text)
-      textSent = true
-      console.log(`[push] Text sent to ${userId}: ${req.text.slice(0, 60)}...`)
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e)
-      console.error(`[push] Text send failed:`, msg)
-      this.logPush({ ts: new Date().toISOString(), text: req.text, imageCount: req.images?.length ?? 0, success: false, error: msg })
-      return { ok: false, textSent: false, imagesSent: 0, imageErrors: [msg] }
+    const text = req.text?.trim()
+
+    // 1. Send text if present
+    if (text) {
+      try {
+        await this.bot.send(userId, text)
+        textSent = true
+        console.log(`[push] Text sent to ${userId}: ${text.slice(0, 60)}...`)
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e)
+        console.error(`[push] Text send failed:`, msg)
+        this.logPush({ ts: new Date().toISOString(), text, imageCount: req.images?.length ?? 0, success: false, error: msg })
+        return { ok: false, textSent: false, imagesSent: 0, imageErrors: [msg] }
+      }
     }
 
     // 2. Send images (best-effort with fallback)
@@ -329,8 +336,8 @@ export class PushServer {
       }
     }
 
-    const ok = textSent
-    this.logPush({ ts: new Date().toISOString(), text: req.text, imageCount: imagesSent, success: ok, error: imageErrors.length > 0 ? imageErrors.join('; ') : undefined })
+    const ok = textSent || imagesSent > 0
+    this.logPush({ ts: new Date().toISOString(), text: text ?? '', imageCount: imagesSent, success: ok, error: imageErrors.length > 0 ? imageErrors.join('; ') : undefined })
 
     return { ok, textSent, imagesSent, imageErrors }
   }
