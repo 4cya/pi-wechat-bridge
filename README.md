@@ -38,6 +38,12 @@
 | 多个助手同时干活会互相等 | 不同 session 并发，不会阻塞 |
 | 每个项目规则不同，不想混 | 每个 session 独立目录，`.pi/SYSTEM.md` 自治 |
 
+### 两个仓库如何配合
+
+- `pi-wechat-bridge`：微信桥接器，负责收消息、路由会话、push 推送。
+- `pi-wechat-bridge-bind`：Pi package，负责把当前 Pi session 绑定到桥接器 keyword。
+- 典型流程：先装桥接器，再在目标 Pi session 里执行 `/bind-wechat <keyword>`。
+
 ### 快速开始
 
 ```bash
@@ -94,6 +100,19 @@ npm start
         └── SYSTEM.md
 ```
 
+### 绑定步骤示例
+
+```bash
+# 1) 安装桥接器
+cd /home/ubuntu/work/pi-wechat-bridge && npm install && npm start
+
+# 2) 安装绑定包（在你要绑定的 Pi session / 项目里）
+pi install git:github.com/4cya/pi-wechat-bridge-bind@v0.1.0
+
+# 3) 进入目标 Pi session 后执行
+/bind-wechat english
+```
+
 ### 兼容的 AI Agent
 
 | Agent | 状态 |
@@ -102,6 +121,19 @@ npm start
 | [Claude Code](https://docs.anthropic.com/en/docs/claude-code) | 🔜 适配器开发中 |
 | [OpenAI Codex](https://github.com/openai/codex) | 🔜 适配器开发中 |
 | [OpenCode](https://github.com/sst/opencode) | 🔜 适配器开发中 |
+
+### 给 Agent 的安装提示
+
+把下面这段直接发给 AI/Agent：
+
+```text
+请帮我安装并配置 pi-wechat-bridge：
+1. 安装/更新桥接器仓库 git@github.com:4cya/pi-wechat-bridge.git
+2. 安装 Pi package：pi install git:github.com/4cya/pi-wechat-bridge-bind@v0.1.0
+3. 在目标 Pi session 中执行 /bind-wechat <keyword> 绑定当前 session
+4. 如需解绑，执行 /unbind-wechat
+5. 桥接器默认读取 ~/.pi/agent/pi-wechat-bridge.json，可用 PI_WECHAT_BRIDGE_CONFIG 覆盖
+```
 
 ### 配置说明
 
